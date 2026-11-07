@@ -4,7 +4,7 @@ export type Question =
   | { id: string; kind: 'mood'; label: L; allowNA?: L }
   | { id: string; kind: 'choice'; label: L; options: { value: string; label: L }[] }
   | { id: string; kind: 'time'; label: L }
-  | { id: string; kind: 'yesno'; label: L; detailsLabel?: L }
+  | { id: string; kind: 'yesno'; label: L; detailsLabel?: L; /** which answer opens the details box (default: yes) */ detailsOn?: boolean }
   | { id: string; kind: 'text'; label: L; placeholder?: L }
 
 export const MOODS: { value: number; emoji: string; label: L }[] = [
@@ -56,6 +56,8 @@ export const TRACKERS: Record<EntryType, { emoji: string; title: L; subtitle: L;
         label: { en: 'Did the child wake up during the night?', hi: 'क्या बच्चा रात में जागा?' },
         detailsLabel: { en: 'How many times / for how long?', hi: 'कितनी बार / कितनी देर?' },
       },
+      { id: 'moodBeforeSleep', kind: 'mood', label: { en: 'How was the child’s mood before going to sleep?', hi: 'सोने से पहले बच्चे का मूड कैसा था?' } },
+      { id: 'moodAfterWaking', kind: 'mood', label: { en: 'How was the child’s mood after waking up?', hi: 'जागने के बाद बच्चे का मूड कैसा था?' } },
       NOTES,
     ],
   },
@@ -70,6 +72,30 @@ export const TRACKERS: Record<EntryType, { emoji: string; title: L; subtitle: L;
         kind: 'yesno',
         label: { en: 'Was there any outburst or meltdown?', hi: 'क्या कोई गुस्सा/रोने का दौरा पड़ा?' },
         detailsLabel: { en: 'Describe briefly (or log it as an incident)', hi: 'संक्षेप में बताएँ (या घटना के रूप में दर्ज करें)' },
+      },
+      {
+        id: 'trigger',
+        kind: 'yesno',
+        label: { en: 'Did any specific event trigger the child today?', hi: 'क्या आज किसी खास घटना ने बच्चे को परेशान किया?' },
+        detailsLabel: { en: 'What was it?', hi: 'वह क्या था?' },
+      },
+      {
+        id: 'regulation',
+        kind: 'yesno',
+        label: { en: 'Did you do anything to help regulate the child’s behaviour?', hi: 'क्या आपने बच्चे के व्यवहार को शांत करने के लिए कुछ किया?' },
+        detailsLabel: { en: 'What did you do, and did it help?', hi: 'आपने क्या किया, और क्या इससे मदद मिली?' },
+      },
+      {
+        id: 'moodBeforeCentre',
+        kind: 'mood',
+        label: { en: 'Mood before going to the centre/school', hi: 'केंद्र/स्कूल जाने से पहले का मूड' },
+        allowNA: { en: 'Did not go today / not applicable', hi: 'आज नहीं गया / लागू नहीं' },
+      },
+      {
+        id: 'moodAfterCentre',
+        kind: 'mood',
+        label: { en: 'Mood after coming back from the centre/school', hi: 'केंद्र/स्कूल से लौटने के बाद का मूड' },
+        allowNA: { en: 'Did not go today / not applicable', hi: 'आज नहीं गया / लागू नहीं' },
       },
       {
         id: 'unusual',
@@ -107,6 +133,14 @@ export const TRACKERS: Record<EntryType, { emoji: string; title: L; subtitle: L;
         label: { en: 'Did the child refuse any food?', hi: 'क्या बच्चे ने कोई खाना खाने से मना किया?' },
         detailsLabel: { en: 'Which food?', hi: 'कौन-सा खाना?' },
       },
+      {
+        id: 'allMeals',
+        kind: 'yesno',
+        label: { en: 'Did the child eat all meals properly today?', hi: 'क्या आज बच्चे ने सभी भोजन ठीक से खाए?' },
+        detailsLabel: { en: 'Which meal was missed or not finished?', hi: 'कौन-सा भोजन छूटा या पूरा नहीं हुआ?' },
+        detailsOn: false,
+      },
+      { id: 'mealMood', kind: 'mood', label: { en: 'How was the child’s mood during meal times?', hi: 'भोजन के समय बच्चे का मूड कैसा था?' } },
       NOTES,
     ],
   },

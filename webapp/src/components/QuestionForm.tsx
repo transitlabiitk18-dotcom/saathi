@@ -58,7 +58,7 @@ export function QuestionForm({ questions, answers, onChange }: { questions: Ques
                   ]}
                   onChange={(v) => set(q.id, v)}
                 />
-                {answers[q.id] === true && (
+                {answers[q.id] === (q.detailsOn ?? true) && (
                   <Input
                     className="mt-3"
                     placeholder={q.detailsLabel ? tl(q.detailsLabel) : t('howMany')}

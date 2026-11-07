@@ -118,7 +118,7 @@ function Records({ since }: { since: string }) {
   const is = incidents.filter((i) => who === 'all' || i.authorUid === who)
 
   const summary = (type: keyof typeof TRACKERS, a: Record<string, unknown>) => {
-    if (type === 'mood') return `${moodEmoji(a.overallMood)}${a.outburst ? ` · ${tl(T('outburst', 'दौरा'))}` : ''}${a.unusual ? ` · ${a.unusual}` : ''}`
+    if (type === 'mood') return `${moodEmoji(a.overallMood)}${a.outburst ? ` · ${tl(T('outburst', 'दौरा'))}` : ''}${a.trigger ? ` · ${tl(T('trigger', 'ट्रिगर'))}` : ''}${a.unusual ? ` · ${a.unusual}` : ''}`
     if (type === 'sleep') return `${a.sleepTime ?? '?'}–${a.wakeTime ?? '?'} · ${a.quality ?? ''}${a.nightWaking ? ` · ${tl(T('woke at night', 'रात में जागा'))}` : ''}`
     return `${a.appetite ?? ''}${a.refusal ? ` · ${tl(T('refused food', 'खाना मना'))}` : ''}${a.notes ? ` · ${a.notes}` : ''}`
   }
@@ -145,7 +145,12 @@ function Records({ since }: { since: string }) {
                   <tr key={e.id}>
                     <td className="whitespace-nowrap px-4 py-2 font-semibold text-slate-600">{formatDate(e.date, lang, { day: 'numeric', month: 'short' })}</td>
                     <td className="px-2 py-2">{TRACKERS[e.type].emoji}</td>
-                    <td className="px-2 py-2 text-slate-700">{summary(e.type, e.answers)}</td>
+                    <td className="px-2 py-2 text-slate-700">
+                      <details>
+                        <summary className="cursor-pointer">{summary(e.type, e.answers)}</summary>
+                        <EntryAnswers type={e.type} answers={e.answers} />
+                      </details>
+                    </td>
                     <td className="whitespace-nowrap px-4 py-2 text-xs text-slate-400">{tl(RELATION_LABEL[e.authorRelation])}</td>
                   </tr>
                 ))}
@@ -427,5 +432,35 @@ function Notes({ studyId }: { studyId: string }) {
         </Button>
       </Card>
     </div>
+  )
+}
+
+/** Every answer in a diary entry, labelled with its question, for the researcher's full view. */
+function EntryAnswers({ type, answers }: { type: keyof typeof TRACKERS; answers: Record<string, unknown> }) {
+  const { tl } = useI18n()
+  const fmt = (q: (typeof TRACKERS)[typeof type]['questions'][number]): string | null => {
+    const v = answers[q.id]
+    if (v === undefined || v === null || v === '') return null
+    if (v === 'na') return tl(T('Not applicable', 'लागू नहीं'))
+    if (q.kind === 'mood') return moodEmoji(v)
+    if (q.kind === 'choice') return tl(q.options.find((o) => o.value === v)?.label ?? { en: String(v), hi: String(v) })
+    if (q.kind === 'yesno') {
+      const d = answers[`${q.id}_details`]
+      return `${v ? tl(T('Yes', 'हाँ')) : tl(T('No', 'नहीं'))}${d ? ` — ${d}` : ''}`
+    }
+    return String(v)
+  }
+  return (
+    <dl className="mt-2 space-y-1 rounded-xl bg-sand-50 p-3 text-xs">
+      {TRACKERS[type].questions.map((q) => {
+        const v = fmt(q)
+        return v === null ? null : (
+          <div key={q.id}>
+            <dt className="inline text-slate-500">{tl(q.label)}: </dt>
+            <dd className="inline font-semibold text-slate-700">{v}</dd>
+          </div>
+        )
+      })}
+    </dl>
   )
 }

@@ -156,7 +156,7 @@ export function DashboardPage() {
           {!latest ? (
             <div>
               <p className="text-slate-500">{t('noAssessmentYet')}</p>
-              <Link to="/assess/new">
+              <Link to="/assess/checklist">
                 <Button className="mt-4" size="sm">
                   {t('startAssessment')}
                 </Button>
