@@ -1,0 +1,262 @@
+rules_version = '2';
+
+// There is no backend: these rules ARE the server-side access control. Keep them in sync with src/lib/db.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function me() {
+      return request.auth.uid;
+    }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(me())).data;
+    }
+    function childDoc(childId) {
+      return get(/databases/$(database)/documents/children/$(childId)).data;
+    }
+    function studyDoc(sid) {
+      return get(/databases/$(database)/documents/studies/$(sid)).data;
+    }
+    function isMember(childId) {
+      return signedIn() && me() in childDoc(childId).memberUids;
+    }
+    function isOwner(childId) {
+      return signedIn() && childDoc(childId).ownerUid == me();
+    }
+    function isResearcherOf(childId) {
+      return signedIn() && childDoc(childId).researcherUid == me();
+    }
+    function canRead(childId) {
+      return isMember(childId) || isResearcherOf(childId);
+    }
+    function authoredByMe(childId) {
+      return request.resource.data.authorUid == me()
+        && request.resource.data.authorRelation == childDoc(childId).members[me()].relation;
+    }
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+    function validRelation(r) {
+      return r in ['parent', 'otherParent', 'sibling', 'relative', 'caregiver', 'teacher'];
+    }
+
+    // ---- User profiles: private to their owner; mode can't change after sign-up ----
+    match /users/{uid} {
+      allow read: if signedIn() && me() == uid;
+      allow create: if signedIn() && me() == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.mode in ['individual', 'researcher']
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'email', 'mode', 'lang', 'createdAt', 'consent']);
+      allow update: if signedIn() && me() == uid
+        && (changed().hasOnly(['name', 'lang', 'consent'])
+            // one-time upgrade of prototype accounts (no mode yet) to Individual
+            || (resource.data.get('mode', null) == null && changed().hasOnly(['mode', 'role']) && request.resource.data.mode == 'individual'));
+      allow delete: if signedIn() && me() == uid;
+    }
+
+    // ---- Child join codes: fetchable only by exact code, never listable ----
+    match /codes/{code} {
+      allow get: if signedIn();
+      allow list, update: if false;
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == me()
+        && getAfter(/databases/$(database)/documents/children/$(request.resource.data.childId)).data.code == code
+        && getAfter(/databases/$(database)/documents/children/$(request.resource.data.childId)).data.ownerUid == me();
+      allow delete: if signedIn() && resource.data.ownerUid == me();
+    }
+
+    // ---- Children ----
+    match /children/{childId} {
+      allow read: if signedIn() && (me() in resource.data.memberUids || resource.data.researcherUid == me());
+
+      // Individual users create child profiles together with their join code.
+      allow create: if signedIn()
+        && userDoc().mode == 'individual'
+        && request.resource.data.ownerUid == me()
+        && request.resource.data.memberUids == [me()]
+        && request.resource.data.members.keys().hasOnly([me()])
+        && validRelation(request.resource.data.members[me()].relation)
+        && request.resource.data.studyId == null
+        && request.resource.data.researcherUid == null
+        && getAfter(/databases/$(database)/documents/codes/$(request.resource.data.code)).data.childId == childId;
+
+      // The owner edits details, removes (never adds) contributors, and may issue a new join code.
+      allow update: if signedIn()
+        && resource.data.ownerUid == me()
+        && changed().hasOnly(['name', 'dob', 'gender', 'primaryLanguage', 'diagnosis', 'diagnosisAge', 'centre', 'school', 'notes', 'memberUids', 'members', 'code'])
+        && me() in request.resource.data.memberUids
+        && resource.data.memberUids.toSet().hasAll(request.resource.data.memberUids)
+        && (request.resource.data.code == resource.data.code
+            || getAfter(/databases/$(database)/documents/codes/$(request.resource.data.code)).data.childId == childId);
+
+      // Anyone holding the join code adds themself (and only themself) as a contributor.
+      allow update: if signedIn()
+        && userDoc().mode == 'individual'
+        && !(me() in resource.data.memberUids)
+        && changed().hasOnly(['memberUids', 'members'])
+        && request.resource.data.memberUids.toSet() == resource.data.memberUids.toSet().union([me()].toSet())
+        && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()])
+        && request.resource.data.members[me()].code == resource.data.code
+        && validRelation(request.resource.data.members[me()].relation);
+
+      // A contributor (not the owner) leaves.
+      allow update: if signedIn()
+        && me() in resource.data.memberUids
+        && resource.data.ownerUid != me()
+        && changed().hasOnly(['memberUids', 'members'])
+        && request.resource.data.memberUids.toSet() == resource.data.memberUids.toSet().difference([me()].toSet())
+        && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([me()]);
+
+      // A contributor enrols the child in a study (with a participant record written in the same batch).
+      allow update: if signedIn()
+        && me() in resource.data.memberUids
+        && resource.data.studyId == null
+        && changed().hasOnly(['studyId', 'researcherUid'])
+        && existsAfter(/databases/$(database)/documents/studies/$(request.resource.data.studyId)/participants/$(childId))
+        && studyDoc(request.resource.data.studyId).ownerUid == request.resource.data.researcherUid;
+
+      // The researcher completes a withdrawal, which removes their access.
+      allow update: if signedIn()
+        && resource.data.researcherUid == me()
+        && changed().hasOnly(['studyId', 'researcherUid'])
+        && request.resource.data.studyId == null
+        && request.resource.data.researcherUid == null;
+
+      allow delete: if signedIn() && resource.data.ownerUid == me();
+
+      // Sleep / mood / appetite: one doc per type, date and contributor; only that contributor writes it.
+      match /entries/{entryId} {
+        allow read: if canRead(childId);
+        allow create, update: if isMember(childId)
+          && authoredByMe(childId)
+          && request.resource.data.type in ['sleep', 'mood', 'appetite']
+          && entryId == request.resource.data.type + '_' + request.resource.data.date + '_' + me();
+        allow delete: if isMember(childId) && (resource.data.authorUid == me() || isOwner(childId));
+      }
+
+      match /incidents/{id} {
+        allow read: if canRead(childId);
+        allow create: if isMember(childId) && authoredByMe(childId);
+        allow update: if isMember(childId) && resource.data.authorUid == me() && authoredByMe(childId);
+        allow delete: if isMember(childId) && (resource.data.authorUid == me() || isOwner(childId));
+      }
+
+      // Questionnaire results are immutable once recorded; the author (or owner) can delete a mistaken one.
+      match /assessments/{id} {
+        allow read: if canRead(childId);
+        allow create: if isMember(childId)
+          && authoredByMe(childId)
+          && (request.resource.data.studyId == null || request.resource.data.studyId == childDoc(childId).studyId);
+        allow update: if false;
+        allow delete: if isMember(childId) && (resource.data.authorUid == me() || isOwner(childId));
+      }
+
+      match /interventions/{iid} {
+        allow read: if canRead(childId);
+        allow create: if (isMember(childId)
+            && request.resource.data.createdBy == me()
+            && request.resource.data.source in ['recommendation', 'library', 'custom']
+            && (request.resource.data.studyId == null || request.resource.data.studyId == childDoc(childId).studyId))
+          || (isResearcherOf(childId)
+            && request.resource.data.createdBy == me()
+            && request.resource.data.source == 'researcher'
+            && request.resource.data.studyId == childDoc(childId).studyId);
+        allow update: if (isMember(childId) && resource.data.source != 'researcher' && changed().hasOnly(['status']))
+          || (isResearcherOf(childId) && resource.data.source == 'researcher' && changed().hasOnly(['status']));
+        allow delete: if (isMember(childId) && resource.data.source != 'researcher' && (resource.data.createdBy == me() || isOwner(childId)))
+          || isOwner(childId)
+          || (isResearcherOf(childId) && resource.data.source == 'researcher');
+
+        match /logs/{lid} {
+          allow read: if canRead(childId);
+          allow create: if isMember(childId) && authoredByMe(childId);
+          allow update: if isMember(childId) && resource.data.authorUid == me() && authoredByMe(childId);
+          allow delete: if (isMember(childId) && (resource.data.authorUid == me() || isOwner(childId)))
+            || (isResearcherOf(childId)
+              && get(/databases/$(database)/documents/children/$(childId)/interventions/$(iid)).data.source == 'researcher');
+        }
+      }
+
+      // Tasks are set by the child's researcher; contributors can only complete them.
+      match /tasks/{tid} {
+        allow read: if canRead(childId);
+        allow create: if isResearcherOf(childId)
+          && request.resource.data.createdBy == me()
+          && request.resource.data.studyId == childDoc(childId).studyId;
+        allow update: if isResearcherOf(childId)
+          || (isMember(childId)
+            && changed().hasOnly(['status', 'response', 'completedBy', 'completedByName', 'completedAt'])
+            && request.resource.data.status == 'done'
+            && request.resource.data.completedBy == me());
+        allow delete: if isResearcherOf(childId) || isOwner(childId);
+      }
+
+      // Visual routines are shared by everyone in the child's care team.
+      match /routines/{id} {
+        allow read: if canRead(childId);
+        allow write: if isMember(childId);
+      }
+    }
+
+    // ---- Research studies ----
+    match /studies/{sid} {
+      // Study info (title, description, consent) is shown to anyone holding the invitation code.
+      allow get: if signedIn();
+      allow list: if signedIn() && resource.data.ownerUid == me();
+      allow create: if signedIn()
+        && userDoc().mode == 'researcher'
+        && request.resource.data.ownerUid == me()
+        && getAfter(/databases/$(database)/documents/studyCodes/$(request.resource.data.code)).data.studyId == sid;
+      allow update: if signedIn() && resource.data.ownerUid == me()
+        && changed().hasOnly(['title', 'description', 'active', 'consentText']);
+      allow delete: if false;
+
+      match /participants/{childId} {
+        allow read: if signedIn() && (studyDoc(sid).ownerUid == me() || me() in childDoc(childId).memberUids);
+
+        // A contributor enrols the child after accepting the study consent (needs the study code).
+        function validEnrolment() {
+          return signedIn()
+            && me() in childDoc(childId).memberUids
+            && childDoc(childId).studyId == null
+            && studyDoc(sid).active == true
+            && request.resource.data.code == studyDoc(sid).code
+            && request.resource.data.childId == childId
+            && request.resource.data.enrolledByUid == me()
+            && request.resource.data.status == 'active'
+            && request.resource.data.deleteDataRequested == false;
+        }
+        allow create: if validEnrolment();
+        // Re-joining the same study after an earlier withdrawal.
+        allow update: if resource.data.status == 'withdrawn' && validEnrolment();
+
+        // A contributor asks to withdraw.
+        allow update: if signedIn()
+          && me() in childDoc(childId).memberUids
+          && resource.data.status == 'active'
+          && changed().hasOnly(['status', 'deleteDataRequested', 'withdrawalRequestedAt'])
+          && request.resource.data.status == 'withdrawalRequested';
+
+        // The researcher manages participants (e.g. completes a withdrawal).
+        allow update: if signedIn() && studyDoc(sid).ownerUid == me();
+        allow delete: if false;
+
+        // Private progress notes, visible only to the researcher.
+        match /notes/{nid} {
+          allow read, write: if signedIn() && studyDoc(sid).ownerUid == me();
+        }
+      }
+    }
+
+    match /studyCodes/{code} {
+      allow get: if signedIn();
+      allow list, update, delete: if false;
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == me()
+        && getAfter(/databases/$(database)/documents/studies/$(request.resource.data.studyId)).data.code == code
+        && getAfter(/databases/$(database)/documents/studies/$(request.resource.data.studyId)).data.ownerUid == me();
+    }
+  }
+}

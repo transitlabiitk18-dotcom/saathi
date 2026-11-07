@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+.firebase/
+*-debug.log
+npm-debug.log*
+
+# Environment / secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Project documents (shared separately, not in the repo)
+*.docx
+*.doc
+*.pdf
+*.pptx
+*.xlsx
+~$*
+
+# Editor / OS / tools
+.claude/
+.vscode/
+.idea/
+.DS_Store
