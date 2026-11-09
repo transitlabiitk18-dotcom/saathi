@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader, Spinner } from '../components/ui'
 import { useProfile } from '../context/AuthContext'
 import { useChild } from '../context/ChildContext'
-import { BAND_STYLE, DOMAINS, bandFor, type Domain } from '../content/domains'
-import { ATEC, ATEC_INFO, ATEC_MAX, ATEC_TOTAL_MAX, LEVEL_CLS, MCHAT, MCHAT_ITEMS, instrumentName, interpretMchat } from '../content/instruments'
+import { BAND_STYLE, DOMAINS, DOMAIN_BY_ID, bandFor, type Domain } from '../content/domains'
+import { ATEC, ATEC_DOMAIN_MAP, ATEC_INFO, ATEC_MAX, ATEC_TOTAL_MAX, LEVEL_CLS, MCHAT, MCHAT_ITEMS, atecDomainScores, instrumentName, interpretMchat } from '../content/instruments'
 import { Recommendations } from '../components/interventionUi'
 import { T, useI18n } from '../i18n'
 import { formatDate } from '../lib/dates'
@@ -67,11 +67,11 @@ export function AssessmentResultPage({ readOnly, backTo = '/assess' }: { readOnl
       {a.instrument === 'checklist' ? (
         <ChecklistResult a={a} baseline={baseline} readOnly={readOnly} />
       ) : a.instrument === 'atec' ? (
-        <AtecResult a={a} baseline={baseline} />
+        <AtecResult a={a} baseline={baseline} readOnly={readOnly} />
       ) : (
         <McHatResult a={a} baseline={baseline} />
       )}
-      {!readOnly && a.instrument !== 'checklist' && <ScreeningNextStep />}
+      {!readOnly && a.instrument === 'mchat' && <ScreeningNextStep />}
     </>
   )
 }
@@ -140,7 +140,7 @@ function McHatResult({ a, baseline }: { a: Assessment; baseline?: Assessment }) 
           </ul>
         </Card>
       )}
-      <p className="text-xs text-slate-400">M-CHAT-R {MCHAT.copyright}</p>
+      <p className="text-xs text-slate-400">{tl(MCHAT.licence)}</p>
     </div>
   )
 }
@@ -220,8 +220,11 @@ function ChecklistResult({ a, baseline, readOnly }: { a: Assessment; baseline?: 
   )
 }
 
-function AtecResult({ a, baseline }: { a: Assessment; baseline?: Assessment }) {
+function AtecResult({ a, baseline, readOnly }: { a: Assessment; baseline?: Assessment; readOnly?: boolean }) {
   const { t, tl, lang } = useI18n()
+  const child = useChild()
+  const navigate = useNavigate()
+  const interventions = useInterventions(child.id)
   if (a.totalScore === undefined || !a.subscales) return null
   return (
     <div className="space-y-5">
@@ -257,6 +260,9 @@ function AtecResult({ a, baseline }: { a: Assessment; baseline?: Assessment }) {
                   {prev !== undefined && <div className="absolute inset-y-0 left-0 rounded-full bg-slate-300" style={{ width: `${(prev / ATEC_MAX[s.id]) * 100}%` }} />}
                   <div className="absolute inset-y-0 left-0 rounded-full bg-brand-500" style={{ width: `${Math.max(2, (v / ATEC_MAX[s.id]) * 100)}%` }} />
                 </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {tl(T('Linked areas', 'जुड़े क्षेत्र'))}: {ATEC_DOMAIN_MAP[s.id].map((id) => `${DOMAIN_BY_ID[id].emoji} ${tl(DOMAIN_BY_ID[id].name)}`).join(' · ')}
+                </div>
               </div>
             )
           })}
@@ -265,6 +271,27 @@ function AtecResult({ a, baseline }: { a: Assessment; baseline?: Assessment }) {
           {tl(T(`Max total ${ATEC_TOTAL_MAX}. ATEC has no diagnostic cut-off; it is used to track change.`, `अधिकतम ${ATEC_TOTAL_MAX}। ATEC का कोई नैदानिक कट-ऑफ़ नहीं; इसका उपयोग बदलाव देखने के लिए होता है।`))} {ATEC_INFO.copyright}
         </p>
       </Card>
+      {!readOnly && (
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-800">🧩 {tl(T('Recommended interventions', 'सुझाए गए हस्तक्षेप'))}</h2>
+          <p className="mb-4 text-slate-500">
+            {tl(
+              T(
+                'Based on the ATEC areas with higher scores (draft link between ATEC and the development areas). Accept to add it to your active interventions, or reject it.',
+                'ATEC के ज़्यादा अंक वाले क्षेत्रों के आधार पर (ATEC और विकास क्षेत्रों के बीच मसौदा संबंध)। सक्रिय हस्तक्षेपों में जोड़ने के लिए स्वीकार करें, या अस्वीकार करें।',
+              ),
+            )}
+          </p>
+          {interventions === null ? <Spinner /> : <Recommendations scores={atecDomainScores(a.subscales)} interventions={interventions} />}
+          <p className="mt-3 text-sm text-slate-500">
+            {tl(T('For a closer look at each area, also fill the', 'हर क्षेत्र को और ध्यान से देखने के लिए'))}{' '}
+            <button onClick={() => navigate('/assess/checklist')} className="font-bold text-brand-700 hover:underline">
+              {tl(T('Domain screening questionnaire', 'डोमेन स्क्रीनिंग प्रश्नावली भरें'))}
+            </button>
+            .
+          </p>
+        </div>
+      )}
     </div>
   )
 }

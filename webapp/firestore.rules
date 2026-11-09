@@ -179,17 +179,21 @@ service cloud.firestore {
         }
       }
 
-      // Tasks are set by the child's researcher; contributors can only complete them.
+      // Tasks are set by the child's researcher, for one contributor or for anyone in the care team;
+      // contributors can only complete them (a task for a specific person only by that person).
       match /tasks/{tid} {
         allow read: if canRead(childId);
         allow create: if isResearcherOf(childId)
           && request.resource.data.createdBy == me()
-          && request.resource.data.studyId == childDoc(childId).studyId;
+          && request.resource.data.studyId == childDoc(childId).studyId
+          && (request.resource.data.get('assignedTo', null) == null
+              || request.resource.data.assignedTo in childDoc(childId).memberUids);
         allow update: if isResearcherOf(childId)
           || (isMember(childId)
             && changed().hasOnly(['status', 'response', 'completedBy', 'completedByName', 'completedAt'])
             && request.resource.data.status == 'done'
-            && request.resource.data.completedBy == me());
+            && request.resource.data.completedBy == me()
+            && (resource.data.get('assignedTo', null) == null || resource.data.assignedTo == me()));
         allow delete: if isResearcherOf(childId) || isOwner(childId);
       }
 

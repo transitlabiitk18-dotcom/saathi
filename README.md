@@ -1,4 +1,4 @@
-# Saathi
+# Au-Care
 
 Autism monitoring and intervention web app for the IIT Kanpur autism project (React + Firebase, no other backend).
 

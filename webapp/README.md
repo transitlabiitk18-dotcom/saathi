@@ -1,4 +1,4 @@
-# Saathi — autism monitoring & intervention app
+# Au-Care — autism monitoring & intervention app
 
 A React web app for the IIT Kanpur autism project. **Firebase is the only backend**: Firebase Auth for
 logins, Cloud Firestore for data, and Firestore Security Rules ([firestore.rules](firestore.rules)) for
@@ -12,10 +12,10 @@ server-side access control. It runs on the free Spark plan.
 |---|---|
 | Child profiles | Create one or more children. Each gets a non-secret **Child ID** (e.g. `S7K2PX`, shown to researchers) and a private **join code**. Other people (other parent, sibling, relative, caregiver, teacher) join with the code and pick their relation. The owner can remove people or issue a new code; contributors can leave. |
 | Daily tracking | **Sleep** (times, quality, difficulty falling asleep, night waking), **Mood** (overall mood, outburst, observations), **Appetite** (overall, pattern change, food refusal), each with free text. **Incidents** record what happened, before and after, the child's response, what helped, and severity. |
-| Questionnaires | **Domain screening questionnaire** (main; Low / Medium / High per domain), **ATEC** (77 items, 4 subscales), **M-CHAT-R** (≤ 2.5 years). Each is taken as pre- or post-intervention. |
+| Questionnaires | **Domain screening questionnaire** (main; Low / Medium / High per domain), **ATEC** (77 items, 4 subscales), **Checklist 1** (team's 20 early-signs questions inspired by M-CHAT-R, ≤ 2.5 years). Each is taken as pre- or post-intervention. |
 | Interventions | Domains scored Medium or High produce **recommendations** (why, what, how, steps, what to record) that you **Accept** or **Reject**. You can also browse the strategy library or **add your own** intervention. Active interventions have their own recording form, a history and a weekly progress chart. The default period is 6 weeks; when it ends, the app prompts the follow-up questionnaire. |
 | Visual routines | Picture slideshows for routines and upcoming changes, with read-aloud. |
-| Progress | Domain scores over time, scores by contributor, home vs centre mood, sleep, appetite and sleep quality, incidents per week, intervention sessions per week, ATEC trend, M-CHAT history. Can be filtered by contributor. |
+| Progress | Domain scores over time, scores by contributor, home vs centre mood, sleep, appetite and sleep quality, incidents per week, intervention sessions per week, ATEC trend, Checklist 1 history. Can be filtered by contributor. |
 | Settings | Notifications, joining or withdrawing from a research study, guideline links, consent, **download my data (JSON)**, **delete my account**. |
 
 **Researcher**
@@ -25,7 +25,7 @@ server-side access control. It runs on the free Spark plan.
 | Studies | Create a study with a title, description, duration (4–12 weeks), assessment schedule (which questionnaires), interventions every participant starts with, and **study-specific consent**. Each study gets an **invitation code**. Enrolment can be closed or reopened. |
 | Joining | A participant enters the code in Settings, reads the study consent, picks the child, and joins. The researcher then gets read access to that child. |
 | Study dashboard | Participants by Child ID: week, tracking adherence, intervention sessions, tasks, incidents, last activity. Also a study-level pre vs post comparison and withdrawal requests. |
-| Participant view | Progress charts, **contributions by contributor** (e.g. `S7K2PX → Parent`), questionnaires, interventions (assign from the library or write a custom one), **tasks** (written answer or mark-as-done), and private **progress notes**. |
+| Participant view | Progress charts, **contributions by contributor** (e.g. `S7K2PX → Parent`), questionnaires, interventions (assign from the library or write a custom one), **tasks** (written answer or mark-as-done; for one contributor, e.g. the parent or caregiver, or for anyone in the care team), and private **progress notes**. |
 | Follow-up | Baseline and follow-up questionnaires are prompted to the family automatically, based on the study's schedule and dates. |
 | Withdrawal | A participant requests it and chooses whether research data is deleted. The researcher approves; the research-only data (tasks, researcher-assigned interventions, notes) is deleted if requested, and the researcher's access is removed. |
 
@@ -69,14 +69,14 @@ studyCodes/{CODE}                   studyId, ownerUid
 
 - `src/content/domains.ts`: questionnaire domains, items, cut-offs (`bandFor`). These are **draft** until the team's 4–5 AEPS-3-inspired domains are ready.
 - `src/content/interventions.ts`: intervention library and recording forms. **Placeholder**, to be replaced by the AEPS-3-inspired set.
-- `src/content/instruments.ts`: M-CHAT-R and ATEC items and scoring.
+- `src/content/instruments.ts`: Checklist 1 (M-CHAT-R-inspired) and ATEC items and scoring.
 - `src/content/diaries.ts`: daily tracking questions.
 - `src/content/consent.ts`, `src/content/studyConsent.ts`: general and default study consent (basic v1 text; bump `CONSENT_VERSION` when the wording changes so users re-consent).
 - `src/i18n/strings.ts` and inline `T('English', 'हिंदी')` calls: UI text.
 
 ## Known limits
 
-- **Licences pending:** M-CHAT-R (electronic use) and ATEC, both requested from their authors by email. Hindi item text is a working translation.
+- **Licences pending:** until the M-CHAT-R licence arrives, the app uses the team's own inspired questions (Checklist 1) with provisional, unvalidated score bands; swap in the official items once licensed. ATEC licence also to be requested. Hindi item text is a working translation.
 - **Reminders** work in-app and as browser notifications while a tab is open. Push notifications with the app closed would need Cloud Functions (Blaze plan).
 - **One study per child at a time.**
 - **No audio recording** (decided by the team).

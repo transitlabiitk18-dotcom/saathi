@@ -140,6 +140,10 @@ export interface Task {
   instructions: string
   kind: 'text' | 'checkbox'
   dueDate: string
+  /** Contributor the task is for; null (or missing on older tasks) = anyone in the child's care team. */
+  assignedTo?: string | null
+  assignedToName?: string | null
+  assignedToRelation?: Relation | null
   status: 'open' | 'done'
   response: string
   completedBy: string | null

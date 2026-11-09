@@ -20,3 +20,25 @@ export const RESOURCES: { title: L; source: string; url: string; lang: 'en' | 'h
     lang: 'both',
   },
 ]
+
+/** Sources of the questionnaires used in the app (shown in Settings → Guidelines & references). */
+export const REFERENCES: { title: L; source: string; url: string; note: L }[] = [
+  {
+    title: { en: 'M-CHAT-R (Modified Checklist for Autism in Toddlers, Revised)', hi: 'M-CHAT-R (टॉडलर्स में ऑटिज़्म के लिए संशोधित जाँच-सूची)' },
+    source: 'Robins, D. L., Fein, D., & Barton, M. (2009). mchatscreen.com',
+    url: 'https://mchatscreen.com/',
+    note: {
+      en: 'Checklist 1 in this app is inspired by M-CHAT-R (questions reworded by the project team; not the official questionnaire).',
+      hi: 'इस ऐप की जाँच-सूची 1 M-CHAT-R से प्रेरित है (प्रश्न परियोजना टीम ने अपने शब्दों में लिखे हैं; आधिकारिक प्रश्नावली नहीं)।',
+    },
+  },
+  {
+    title: { en: 'ATEC (Autism Treatment Evaluation Checklist)', hi: 'ATEC (ऑटिज़्म उपचार मूल्यांकन जाँच-सूची)' },
+    source: 'Rimland, B., & Edelson, S. M. (1999). Autism Research Institute',
+    url: 'https://www.autism.org/autism-treatment-evaluation-checklist/',
+    note: {
+      en: 'Used in this app as the ATEC questionnaire.',
+      hi: 'इस ऐप में ATEC प्रश्नावली के रूप में उपयोग किया गया।',
+    },
+  },
+]

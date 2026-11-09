@@ -41,7 +41,8 @@ export function DashboardPage() {
         .slice(0, 3)
     : []
   const active = activeInterventions(interventions)
-  const openTasks = (tasks ?? []).filter((x) => x.status === 'open')
+  // Tasks for me, or for anyone in the care team; tasks for another contributor are theirs to do.
+  const openTasks = (tasks ?? []).filter((x) => x.status === 'open' && (!x.assignedTo || x.assignedTo === profile.uid))
 
   return (
     <>
@@ -247,7 +248,10 @@ function TaskItem({ task }: { task: Task }) {
   }
   return (
     <div className="rounded-2xl bg-violet-50/60 p-4 ring-1 ring-violet-100">
-      <div className="font-bold text-slate-800">{task.title}</div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-bold text-slate-800">{task.title}</span>
+        {task.assignedTo === profile.uid && <Badge className="bg-violet-100 text-violet-700 ring-violet-200">{tl(T('For you', 'आपके लिए'))}</Badge>}
+      </div>
       {task.instructions && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{task.instructions}</p>}
       {task.dueDate && (
         <p className="mt-1 text-xs font-semibold text-slate-500">

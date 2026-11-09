@@ -94,6 +94,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <div className="mb-6 lg:hidden">
             <span className="flex items-center gap-2"><span className="text-4xl">🌱</span><span className="text-2xl font-extrabold tracking-tight text-brand-800">{t('appName')}</span></span>
             <p className="mt-2 text-slate-500">{t('tagline')}</p>
+            <p className="mt-1 font-semibold text-brand-700">{t('aboutText')}</p>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-800">{mode === 'login' ? t('signIn') : t('signUp')}</h1>
           <form onSubmit={submit} className="mt-6 space-y-4">

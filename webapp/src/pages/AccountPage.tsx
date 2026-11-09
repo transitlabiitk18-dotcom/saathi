@@ -5,7 +5,7 @@ import { useRemindersEnabled } from '../components/reminders'
 import { Badge, Button, Card, ErrorText, Field, Input, Modal, PageHeader, Select } from '../components/ui'
 import { useAuth, useProfile, useSaveLang } from '../context/AuthContext'
 import { useChildren } from '../context/ChildContext'
-import { RESOURCES } from '../content/resources'
+import { REFERENCES, RESOURCES } from '../content/resources'
 import { T, useI18n } from '../i18n'
 import { deleteMyAccount, exportChildrenData } from '../lib/account'
 import { formatDate, toISODate } from '../lib/dates'
@@ -115,6 +115,20 @@ function ResourcesCard() {
               <span className="block text-xs text-slate-500">{r.source}</span>
             </span>
             <ExternalLink className="h-4 w-4 text-slate-400" />
+          </a>
+        ))}
+      </div>
+      <h3 className="mb-2 mt-6 font-extrabold text-slate-800">{tl(T('Questionnaire references', 'प्रश्नावली संदर्भ'))}</h3>
+      <div className="space-y-2">
+        {REFERENCES.map((r) => (
+          <a key={r.url} href={r.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl bg-sand-50 p-3 ring-1 ring-sand-200 transition hover:ring-brand-300">
+            <span className="text-2xl">📑</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold text-slate-700">{tl(r.title)}</span>
+              <span className="block text-xs text-slate-500">{r.source}</span>
+              <span className="mt-0.5 block text-xs text-slate-500">{tl(r.note)}</span>
+            </span>
+            <ExternalLink className="h-4 w-4 shrink-0 text-slate-400" />
           </a>
         ))}
       </div>

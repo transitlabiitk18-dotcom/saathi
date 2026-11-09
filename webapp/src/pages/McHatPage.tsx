@@ -100,7 +100,6 @@ export function McHatPage() {
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-extrabold text-brand-700">{i + 1}</span>
               <div className="flex-1">
                 <p className="font-bold text-slate-800">{tl(item.q)}</p>
-                {item.example && <p className="mt-1 text-sm text-slate-500">{tl(item.example)}</p>}
                 <Pills
                   className="mt-3"
                   value={answers[i]}
@@ -121,7 +120,7 @@ export function McHatPage() {
         <Button size="lg" className="w-full sm:w-auto" onClick={submit} loading={busy}>
           {t('finish')}
         </Button>
-        <p className="text-xs text-slate-400">M-CHAT-R {MCHAT.copyright}</p>
+        <p className="text-xs text-slate-400">{tl(MCHAT.licence)}</p>
       </div>
     </div>
   )

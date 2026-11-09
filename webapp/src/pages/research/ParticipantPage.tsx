@@ -308,18 +308,32 @@ function Tasks({ study }: { study: Study }) {
   const [instructions, setInstructions] = useState('')
   const [kind, setKind] = useState<'text' | 'checkbox'>('text')
   const [dueDate, setDueDate] = useState('')
+  const [assignee, setAssignee] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   if (tasks === null) return <Spinner />
+  const members = Object.entries(child.members)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
     try {
-      await createTask(child.id, { studyId: study.id, title: title.trim(), instructions: instructions.trim(), kind, dueDate, createdBy: profile.uid })
+      const m = assignee ? child.members[assignee] : null
+      await createTask(child.id, {
+        studyId: study.id,
+        title: title.trim(),
+        instructions: instructions.trim(),
+        kind,
+        dueDate,
+        assignedTo: m ? assignee : null,
+        assignedToName: m?.name ?? null,
+        assignedToRelation: m?.relation ?? null,
+        createdBy: profile.uid,
+      })
       setOpen(false)
       setTitle('')
       setInstructions('')
+      setAssignee('')
     } catch (err) {
       setError(String(err))
     } finally {
@@ -341,6 +355,10 @@ function Tasks({ study }: { study: Study }) {
                   <span className="font-bold text-slate-800">{x.title}</span>
                   <Badge className={x.status === 'done' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'}>
                     {x.status === 'done' ? tl(T('Done', 'पूरा')) : tl(T('Open', 'खुला'))}
+                  </Badge>
+                  <Badge className="bg-violet-50 text-violet-700 ring-violet-200">
+                    {tl(T('For', 'किसके लिए'))}:{' '}
+                    {x.assignedTo && x.assignedToRelation ? `${tl(RELATION_LABEL[x.assignedToRelation])} (${x.assignedToName})` : tl(T('Anyone in the care team', 'देखभाल टीम में कोई भी'))}
                   </Badge>
                 </div>
                 {x.instructions && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{x.instructions}</p>}
@@ -365,6 +383,16 @@ function Tasks({ study }: { study: Study }) {
           </Field>
           <Field label={tl(T('Instructions', 'निर्देश'))}>
             <Textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} />
+          </Field>
+          <Field label={tl(T('Assign to', 'किसे दें'))}>
+            <Select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+              <option value="">{tl(T('Anyone in the care team', 'देखभाल टीम में कोई भी'))}</option>
+              {members.map(([uid, m]) => (
+                <option key={uid} value={uid}>
+                  {child.publicId} → {tl(RELATION_LABEL[m.relation])} ({m.name})
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label={tl(T('Response type', 'उत्तर का प्रकार'))}>
             <Pills
