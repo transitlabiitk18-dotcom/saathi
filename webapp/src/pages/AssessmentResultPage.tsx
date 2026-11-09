@@ -4,7 +4,7 @@ import { Badge, Button, Card, PageHeader, Spinner } from '../components/ui'
 import { useProfile } from '../context/AuthContext'
 import { useChild } from '../context/ChildContext'
 import { BAND_STYLE, DOMAINS, DOMAIN_BY_ID, bandFor, type Domain } from '../content/domains'
-import { ATEC, ATEC_DOMAIN_MAP, ATEC_INFO, ATEC_MAX, ATEC_TOTAL_MAX, LEVEL_CLS, MCHAT, MCHAT_ITEMS, atecDomainScores, instrumentName, interpretMchat } from '../content/instruments'
+import { ATEC, ATEC_DOMAIN_MAP, ATEC_INFO, ATEC_LOOK_FOR, ATEC_MAX, ATEC_TOTAL_MAX, LEVEL_CLS, MCHAT, MCHAT_ITEMS, atecDomainScores, instrumentName, interpretMchat } from '../content/instruments'
 import { Recommendations } from '../components/interventionUi'
 import { T, useI18n } from '../i18n'
 import { formatDate } from '../lib/dates'
@@ -261,6 +261,9 @@ function AtecResult({ a, baseline, readOnly }: { a: Assessment; baseline?: Asses
                   <div className="absolute inset-y-0 left-0 rounded-full bg-brand-500" style={{ width: `${Math.max(2, (v / ATEC_MAX[s.id]) * 100)}%` }} />
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
+                  {tl(T('Looks at', 'क्या देखता है'))}: {tl(ATEC_LOOK_FOR[s.id])}
+                </div>
+                <div className="mt-0.5 text-xs text-slate-500">
                   {tl(T('Linked areas', 'जुड़े क्षेत्र'))}: {ATEC_DOMAIN_MAP[s.id].map((id) => `${DOMAIN_BY_ID[id].emoji} ${tl(DOMAIN_BY_ID[id].name)}`).join(' · ')}
                 </div>
               </div>
@@ -277,8 +280,8 @@ function AtecResult({ a, baseline, readOnly }: { a: Assessment; baseline?: Asses
           <p className="mb-4 text-slate-500">
             {tl(
               T(
-                'Based on the ATEC areas with higher scores (draft link between ATEC and the development areas). Accept to add it to your active interventions, or reject it.',
-                'ATEC के ज़्यादा अंक वाले क्षेत्रों के आधार पर (ATEC और विकास क्षेत्रों के बीच मसौदा संबंध)। सक्रिय हस्तक्षेपों में जोड़ने के लिए स्वीकार करें, या अस्वीकार करें।',
+                'Based on the ATEC areas with higher scores (using the team’s link between ATEC and the AEPS-3 development areas). Accept to add it to your active interventions, or reject it.',
+                'ATEC के ज़्यादा अंक वाले क्षेत्रों के आधार पर (ATEC और AEPS-3 विकास क्षेत्रों के बीच टीम द्वारा तय संबंध)। सक्रिय हस्तक्षेपों में जोड़ने के लिए स्वीकार करें, या अस्वीकार करें।',
               ),
             )}
           </p>

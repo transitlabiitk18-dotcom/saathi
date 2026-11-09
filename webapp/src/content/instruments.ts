@@ -287,15 +287,23 @@ export const ATEC_INFO = {
 }
 
 /**
- * DRAFT mapping of ATEC subscales onto the app's (AEPS-3-inspired) domains, so an ATEC result can
- * also suggest interventions. To be confirmed by the team. Each domain gets the highest % score of
- * the ATEC subscales linked to it, then uses the same Low / Medium / High cut-offs as the domain screening.
+ * ATEC subscales mapped onto the app's (AEPS-3-inspired) domains, as given by the team, so an ATEC
+ * result can also suggest interventions. Each domain gets the highest % score of the ATEC subscales
+ * linked to it, then uses the same Low / Medium / High cut-offs as the domain screening.
  */
 export const ATEC_DOMAIN_MAP: Record<AtecSubscale['id'], string[]> = {
-  speech: ['expressive', 'receptive'], // AEPS-3: Social-Communication
-  social: ['social', 'emotional'], // AEPS-3: Social-Emotional
-  sensory: ['cognitive', 'receptive'], // AEPS-3: Cognitive
-  health: ['adaptive', 'emotional'], // AEPS-3: Adaptive (toileting, eating, sleep) + behaviour
+  speech: ['expressive', 'receptive', 'literacy'], // AEPS-3: Social-Communication, Literacy (pre-verbal / phonics)
+  social: ['social', 'emotional'], // AEPS-3: Social-Emotional, Social-Communication (pragmatics)
+  sensory: ['cognitive', 'numeracy', 'literacy'], // AEPS-3: Cognitive, Math, Literacy (print concepts)
+  health: ['adaptive', 'fineMotor', 'grossMotor', 'emotional'], // AEPS-3: Adaptive, Fine/Gross Motor, Social-Emotional (conduct)
+}
+
+/** What each ATEC subscale looks for in the linked AEPS-3 areas. */
+export const ATEC_LOOK_FOR: Record<AtecSubscale['id'], L> = {
+  speech: T('Receptive language, vocabulary, functional requests and articulation.', 'भाषा समझना, शब्दावली, ज़रूरत के लिए माँगना और उच्चारण।'),
+  social: T('Shared enjoyment, parallel play, emotional regulation and responding to social cues.', 'साथ में आनंद लेना, साथ-साथ खेलना, भावनाओं को सँभालना और सामाजिक संकेतों का जवाब देना।'),
+  sensory: T('Object permanence, spatial awareness, counting, tracking objects and following multi-step directions.', 'वस्तु स्थायित्व, स्थान की समझ, गिनती, चीज़ों पर नज़र रखना और कई चरणों वाले निर्देश मानना।'),
+  health: T('Independent toileting / feeding, coordination, repetitive movements, sleeping patterns or sensory distress.', 'खुद शौच / खाना, तालमेल, बार-बार की हरकतें, नींद का पैटर्न या संवेदी परेशानी।'),
 }
 
 /** ATEC subscale points → domain scores (0–100, higher = more difficulty), for recommendations. */
